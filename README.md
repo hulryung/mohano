@@ -120,51 +120,58 @@ If you prefer to configure hooks manually, add the following to `~/.claude/setti
 
 </details>
 
-## Remote Server Deployment
+## Deploy to Render
 
-Deploy Mohano to an external server so multiple machines can share one dashboard.
+The easiest way to get Mohano running on a remote server.
 
-### With Docker
+### 1. Deploy the server
 
-On the remote server:
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/hulryung/mohano)
+
+Or manually:
+1. Go to [render.com](https://render.com) and connect your GitHub
+2. Create a **New Web Service** from the `mohano` repo
+3. Render auto-detects the config from `render.yaml`
+4. An API key (`MOHANO_API_KEY`) is generated automatically
+5. Copy the deployed URL (e.g. `https://mohano-xxxx.onrender.com`) and the API key from the Environment tab
+
+### 2. Configure your local machine
 
 ```bash
 git clone https://github.com/hulryung/mohano.git
 cd mohano
+./setup.sh --url https://mohano-xxxx.onrender.com --api-key YOUR_KEY
+```
 
-# Start with an API key for security
+That's it. Start a Claude Code session and events will appear on the remote dashboard.
+
+## Other Deployment Options
+
+<details>
+<summary>Docker (any VPS)</summary>
+
+```bash
+git clone https://github.com/hulryung/mohano.git && cd mohano
 MOHANO_API_KEY=your-secret-key docker compose up -d
 ```
 
-### Without Docker
+</details>
+
+<details>
+<summary>Node.js direct</summary>
 
 ```bash
-git clone https://github.com/hulryung/mohano.git
-cd mohano/server
+git clone https://github.com/hulryung/mohano.git && cd mohano/server
 npm install
-
-# Start with API key
 MOHANO_API_KEY=your-secret-key npm start
 ```
 
-### Client Setup (on your local machine)
+</details>
 
-Point your local hooks at the remote server:
-
-```bash
-git clone https://github.com/hulryung/mohano.git
-cd mohano
-./setup.sh --url https://mohano.example.com --api-key your-secret-key
-```
-
-This writes the URL and API key to `~/.config/mohano/config` and configures Claude Code hooks. No local server needed.
-
-### HTTPS with a Reverse Proxy
-
-For production, put Mohano behind nginx or caddy with TLS:
+<details>
+<summary>HTTPS with nginx reverse proxy</summary>
 
 ```nginx
-# /etc/nginx/sites-available/mohano
 server {
     server_name mohano.example.com;
 
@@ -178,13 +185,25 @@ server {
 }
 ```
 
-The `proxy_set_header Upgrade/Connection` lines are required for WebSocket to work.
+The `Upgrade/Connection` headers are required for WebSocket.
+
+</details>
+
+### Client Setup
+
+After deploying the server, point your local hooks at it:
+
+```bash
+./setup.sh --url https://your-server-url --api-key YOUR_KEY
+```
+
+This writes config to `~/.config/mohano/config` and sets up Claude Code hooks. No local server needed.
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `7777` | Server listen port |
+| `PORT` | `7777` | Server listen port (Render sets this automatically) |
 | `MOHANO_API_KEY` | _(empty)_ | API key for authentication. If empty, all access is open |
 | `MAX_EVENTS` | `2000` | Circular buffer capacity |
 

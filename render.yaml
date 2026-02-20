@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mohano
+    runtime: node
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: node server/index.mjs
+    envVars:
+      - key: MOHANO_API_KEY
+        generateValue: true
+      - key: MAX_EVENTS
+        value: "2000"
