@@ -426,7 +426,43 @@ body.panel-collapsed #app {
   position: relative;
 }
 
+.task-session-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.task-session-bar label {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.task-session-bar select {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  min-width: 200px;
+}
+
+.task-session-bar select:focus {
+  border-color: var(--accent-blue);
+}
+
 #taskgraph-board {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
@@ -535,19 +571,29 @@ body.panel-collapsed #app {
   height: 100%;
   pointer-events: none;
   z-index: 10;
+  overflow: visible;
 }
 
 .dep-arrow {
-  stroke: var(--accent-blue);
-  stroke-width: 1.5;
   fill: none;
-  opacity: 0.5;
-  stroke-dasharray: 4 3;
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 
-.dep-arrow-head {
-  fill: var(--accent-blue);
+.dep-arrow.completed {
+  stroke: var(--accent-green);
   opacity: 0.5;
+}
+
+.dep-arrow.pending {
+  stroke: var(--accent-blue);
+  opacity: 0.6;
+  stroke-dasharray: 6 4;
+  animation: dashFlow 1s linear infinite;
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -10; }
 }
 
 /* === Bottom Panel === */
@@ -713,7 +759,7 @@ body.panel-collapsed #bottom-panel-content {
 #detail-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -721,7 +767,27 @@ body.panel-collapsed #bottom-panel-content {
 #detail-header h3 {
   font-size: 14px;
   font-weight: 600;
+  flex: 1;
 }
+
+#detail-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.detail-tab {
+  padding: 3px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.detail-tab:hover { color: var(--text-primary); border-color: var(--border-light); }
+.detail-tab.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
 
 #detail-close {
   background: none;
@@ -737,16 +803,95 @@ body.panel-collapsed #bottom-panel-content {
   color: var(--text-primary);
 }
 
-#detail-json {
-  padding: 16px;
+.detail-view {
+  display: none;
   overflow: auto;
   flex: 1;
+}
+
+.detail-view.active {
+  display: block;
+}
+
+#detail-json {
+  padding: 16px;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* Parsed detail view */
+#detail-parsed {
+  padding: 16px;
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-fields {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+
+.detail-field-key {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 0;
+  white-space: nowrap;
+}
+
+.detail-field-value {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 3px 0;
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.detail-field-value.truncated {
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
+}
+
+.detail-field-value.truncated::after {
+  content: '...click Raw JSON for full content';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 0;
+  background: linear-gradient(transparent, var(--bg-secondary));
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.detail-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* === Scrollbar === */

@@ -65,6 +65,7 @@
 
       <div id="view-taskgraph" class="view">
         <div id="taskgraph-board">
+          <svg id="dependency-arrows" class="dependency-overlay"></svg>
           <div class="kanban-column" data-status="pending">
             <div class="kanban-header">Pending</div>
             <div class="kanban-cards" id="col-pending"></div>
@@ -78,7 +79,6 @@
             <div class="kanban-cards" id="col-completed"></div>
           </div>
         </div>
-        <svg id="dependency-arrows" class="dependency-overlay"></svg>
       </div>
     </main>
   </div>
@@ -109,9 +109,14 @@
     <div id="detail-panel">
       <div id="detail-header">
         <h3 id="detail-title">Event Detail</h3>
+        <div id="detail-tabs">
+          <button class="detail-tab active" data-detail="parsed">Parsed</button>
+          <button class="detail-tab" data-detail="raw">Raw JSON</button>
+        </div>
         <button id="detail-close">&times;</button>
       </div>
-      <pre id="detail-json"></pre>
+      <div id="detail-parsed" class="detail-view active"></div>
+      <pre id="detail-json" class="detail-view"></pre>
     </div>
   </div>
 

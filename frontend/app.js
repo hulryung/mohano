@@ -7,8 +7,9 @@
   // ── State ──────────────────────────────────────────────────
   const state = {
     events: [],
-    tasks: [],
-    agents: new Map(),       // agentName -> { color, eventCount, lastSeen }
+    tasksBySession: new Map(),  // sessionId -> Map(taskId -> task)
+    activeTaskSession: '',      // which session's tasks to show ('' = latest)
+    agents: new Map(),          // agentName -> { color, eventCount, lastSeen }
     sessions: new Set(),
     eventTypes: new Set(),
     filters: { session: '', agent: '', types: new Set() },
@@ -228,35 +229,98 @@
     if (session) state.sessions.add(session);
     state.eventTypes.add(type);
 
-    // Extract tasks from task-related events
-    if (type === 'TaskStart' || type === 'TaskCompleted' || type === 'TaskUpdate') {
-      upsertTask(event);
+    // Extract tasks from tool events (PostToolUse only to avoid duplicates)
+    const toolName = event.tool_name || '';
+    if (type === 'PostToolUse' && (toolName === 'TaskCreate' || toolName === 'TaskUpdate')) {
+      upsertTaskFromTool(event);
+    }
+    if (type === 'TaskCompleted') {
+      const sid = extractSessionId(event);
+      const taskId = event.task_id;
+      if (taskId && sid) {
+        const sessionTasks = state.tasksBySession.get(sid);
+        if (sessionTasks) {
+          const existing = sessionTasks.get(String(taskId));
+          if (existing) existing.status = 'completed';
+        }
+      }
     }
   }
 
-  function upsertTask(event) {
-    const id = event.taskId || event.task_id || event.id;
-    if (!id) return;
-    const existing = state.tasks.find((t) => t.id === id);
-    const status = event.taskStatus || event.status ||
-      (extractEventType(event) === 'TaskCompleted' ? 'completed' : undefined);
-    if (existing) {
-      if (event.subject) existing.subject = event.subject;
-      if (event.owner) existing.owner = event.owner;
-      if (status) existing.status = status;
-      if (event.blockedBy) existing.blockedBy = event.blockedBy;
-      if (event.blocks) existing.blocks = event.blocks;
-    } else {
-      state.tasks.push({
+  function getSessionTaskMap(sessionId) {
+    if (!state.tasksBySession.has(sessionId)) {
+      state.tasksBySession.set(sessionId, new Map());
+    }
+    return state.tasksBySession.get(sessionId);
+  }
+
+  function upsertTaskFromTool(event) {
+    const input = event.tool_input || {};
+    const response = event.tool_response || {};
+    const toolName = event.tool_name;
+    const sessionId = extractSessionId(event);
+    if (!sessionId) return;
+
+    const sessionTasks = getSessionTaskMap(sessionId);
+
+    if (toolName === 'TaskCreate') {
+      const taskData = response.task || response;
+      const id = String(taskData.id || '');
+      if (!id) return;
+      // Always create/replace - a new TaskCreate with the same id means a new team's task
+      sessionTasks.set(id, {
         id,
-        subject: event.subject || event.taskSubject || `Task #${id}`,
-        owner: event.owner || extractAgentName(event),
-        status: status || 'pending',
-        blockedBy: event.blockedBy || [],
-        blocks: event.blocks || [],
+        sessionId,
+        subject: input.subject || taskData.subject || `Task #${id}`,
+        owner: '',
+        status: 'pending',
+        blockedBy: [],
+        blocks: [],
+        createdAt: event.timestamp || event.ts || '',
         raw: event,
       });
+      // Track latest session with tasks
+      state.activeTaskSession = sessionId;
+    } else if (toolName === 'TaskUpdate') {
+      const id = String(input.taskId || '');
+      if (!id) return;
+      const existing = sessionTasks.get(id);
+      if (existing) {
+        if (input.status) existing.status = input.status;
+        if (input.owner) existing.owner = input.owner;
+        if (input.subject) existing.subject = input.subject;
+        if (input.addBlockedBy) {
+          existing.blockedBy = [...new Set([...existing.blockedBy, ...input.addBlockedBy])];
+        }
+        if (input.addBlocks) {
+          existing.blocks = [...new Set([...existing.blocks, ...input.addBlocks])];
+        }
+        if (response.statusChange) {
+          existing.status = response.statusChange.to;
+        }
+        existing.raw = event;
+      } else {
+        sessionTasks.set(id, {
+          id,
+          sessionId,
+          subject: input.subject || `Task #${id}`,
+          owner: input.owner || '',
+          status: input.status || 'pending',
+          blockedBy: input.addBlockedBy || [],
+          blocks: input.addBlocks || [],
+          createdAt: event.timestamp || event.ts || '',
+          raw: event,
+        });
+      }
     }
+  }
+
+  function getActiveSessionTasks() {
+    const sid = state.activeTaskSession;
+    if (!sid) return [];
+    const sessionTasks = state.tasksBySession.get(sid);
+    if (!sessionTasks) return [];
+    return [...sessionTasks.values()];
   }
 
   // ── Filtering ──────────────────────────────────────────────
@@ -434,18 +498,56 @@
     }
   }
 
+  // ── Render: Task Session Selector ──────────────────────────
+  function renderTaskSessionSelector() {
+    let selector = document.getElementById('task-session-selector');
+    const container = document.getElementById('view-taskgraph');
+    if (!selector) {
+      const bar = document.createElement('div');
+      bar.className = 'task-session-bar';
+      bar.innerHTML = '<label>Session:</label>';
+      selector = document.createElement('select');
+      selector.id = 'task-session-selector';
+      selector.addEventListener('change', () => {
+        state.activeTaskSession = selector.value;
+        renderTaskGraph();
+      });
+      bar.appendChild(selector);
+      container.insertBefore(bar, container.firstChild);
+    }
+
+    const curVal = state.activeTaskSession;
+    selector.innerHTML = '';
+    for (const [sid] of state.tasksBySession) {
+      const opt = document.createElement('option');
+      opt.value = sid;
+      opt.textContent = sid.slice(0, 8) + '...';
+      // Try to find a project name from events of this session
+      const sampleEvent = state.events.find(e => extractSessionId(e) === sid && e.cwd);
+      if (sampleEvent) {
+        const project = sampleEvent.cwd.split('/').pop();
+        opt.textContent = `${project} (${sid.slice(0, 8)})`;
+      }
+      if (sid === curVal) opt.selected = true;
+      selector.appendChild(opt);
+    }
+  }
+
   // ── Render: Task Graph ─────────────────────────────────────
   function renderTaskGraph() {
     dom.colPending.innerHTML = '';
     dom.colInProgress.innerHTML = '';
     dom.colCompleted.innerHTML = '';
+    renderTaskSessionSelector();
 
-    if (state.tasks.length === 0) {
+    const tasks = getActiveSessionTasks();
+
+    if (tasks.length === 0) {
       dom.colPending.innerHTML = '<div class="empty-state"><div>No tasks</div></div>';
       return;
     }
 
-    for (const task of state.tasks) {
+    for (const task of tasks) {
       const card = document.createElement('div');
       card.className = 'task-card';
       card.dataset.taskId = task.id;
@@ -457,7 +559,7 @@
         <div class="task-card-subject">${escapeHtml(task.subject)}</div>
         <div class="task-card-meta">
           <span class="task-card-owner" style="color: ${agentColor}">${escapeHtml(task.owner || 'unassigned')}</span>
-          ${task.blockedBy && task.blockedBy.length ? `<span class="task-card-deps">blocked by: ${task.blockedBy.join(', ')}</span>` : ''}
+          ${task.blockedBy && task.blockedBy.length ? `<span class="task-card-deps">blocked by: ${task.blockedBy.map(id => '#' + id).join(', ')}</span>` : ''}
         </div>`;
 
       card.addEventListener('click', () => showDetail(task.raw || task));
@@ -477,38 +579,118 @@
   }
 
   function drawDependencyArrows() {
-    dom.depArrows.innerHTML = '';
-    const boardRect = dom.taskBoard.getBoundingClientRect();
+    const svg = dom.depArrows;
+    svg.innerHTML = '';
 
-    for (const task of state.tasks) {
+    const board = dom.taskBoard;
+    const boardRect = board.getBoundingClientRect();
+
+    // Set SVG size to cover the full scrollable area
+    const sw = board.scrollWidth;
+    const sh = board.scrollHeight;
+    svg.setAttribute('width', sw);
+    svg.setAttribute('height', sh);
+    svg.setAttribute('viewBox', `0 0 ${sw} ${sh}`);
+    svg.style.width = sw + 'px';
+    svg.style.height = sh + 'px';
+
+    // Add marker defs for arrowheads (pending = blue, completed = green)
+    const NS = 'http://www.w3.org/2000/svg';
+    const defs = document.createElementNS(NS, 'defs');
+
+    function makeMarker(id, color) {
+      const marker = document.createElementNS(NS, 'marker');
+      marker.setAttribute('id', id);
+      marker.setAttribute('viewBox', '0 0 10 10');
+      marker.setAttribute('refX', '10');
+      marker.setAttribute('refY', '5');
+      marker.setAttribute('markerWidth', '8');
+      marker.setAttribute('markerHeight', '8');
+      marker.setAttribute('orient', 'auto-start-reverse');
+      const arrow = document.createElementNS(NS, 'path');
+      arrow.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+      arrow.setAttribute('fill', color);
+      marker.appendChild(arrow);
+      return marker;
+    }
+
+    defs.appendChild(makeMarker('arrow-pending', '#58a6ff'));
+    defs.appendChild(makeMarker('arrow-completed', '#3fb950'));
+    svg.appendChild(defs);
+
+    // Scroll offsets so we translate viewport coords into board-content coords
+    const scrollLeft = board.scrollLeft;
+    const scrollTop = board.scrollTop;
+
+    const tasks = getActiveSessionTasks();
+
+    for (const task of tasks) {
       if (!task.blockedBy || task.blockedBy.length === 0) continue;
-      const toCard = dom.taskBoard.querySelector(`[data-task-id="${task.id}"]`);
+
+      const toCard = board.querySelector(`[data-task-id="${task.id}"]`);
       if (!toCard) continue;
       const toRect = toCard.getBoundingClientRect();
 
       for (const depId of task.blockedBy) {
-        const fromCard = dom.taskBoard.querySelector(`[data-task-id="${depId}"]`);
+        const fromCard = board.querySelector(`[data-task-id="${depId}"]`);
         if (!fromCard) continue;
         const fromRect = fromCard.getBoundingClientRect();
 
-        const x1 = fromRect.right - boardRect.left;
-        const y1 = fromRect.top + fromRect.height / 2 - boardRect.top;
-        const x2 = toRect.left - boardRect.left;
-        const y2 = toRect.top + toRect.height / 2 - boardRect.top;
+        // Determine if the blocking task is completed
+        const blockingTask = tasks.find(t => t.id === String(depId));
+        const isCompleted = blockingTask && blockingTask.status === 'completed';
+        const arrowClass = isCompleted ? 'dep-arrow completed' : 'dep-arrow pending';
+        const markerId = isCompleted ? 'arrow-completed' : 'arrow-pending';
 
-        const midX = (x1 + x2) / 2;
+        // Convert viewport rects to board-content coordinates
+        const fromLeft   = fromRect.left - boardRect.left + scrollLeft;
+        const fromRight  = fromRect.right - boardRect.left + scrollLeft;
+        const fromTop    = fromRect.top - boardRect.top + scrollTop;
+        const fromBottom = fromRect.bottom - boardRect.top + scrollTop;
+        const fromCenterY = fromTop + fromRect.height / 2;
+        const fromCenterX = fromLeft + fromRect.width / 2;
 
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`);
-        path.setAttribute('class', 'dep-arrow');
-        dom.depArrows.appendChild(path);
+        const toLeft   = toRect.left - boardRect.left + scrollLeft;
+        const toRight  = toRect.right - boardRect.left + scrollLeft;
+        const toTop    = toRect.top - boardRect.top + scrollTop;
+        const toBottom = toRect.bottom - boardRect.top + scrollTop;
+        const toCenterY = toTop + toRect.height / 2;
+        const toCenterX = toLeft + toRect.width / 2;
 
-        // Arrowhead
-        const head = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        const hs = 5;
-        head.setAttribute('points', `${x2},${y2} ${x2 - hs * 2},${y2 - hs} ${x2 - hs * 2},${y2 + hs}`);
-        head.setAttribute('class', 'dep-arrow-head');
-        dom.depArrows.appendChild(head);
+        let d;
+
+        if (Math.abs(fromCenterX - toCenterX) < fromRect.width * 0.5) {
+          // Same column: draw from bottom-center of source to top-center of target,
+          // curving outward to the right to avoid overlapping cards
+          const x1 = fromCenterX;
+          const y1 = fromBottom;
+          const x2 = toCenterX;
+          const y2 = toTop;
+          const bulge = 60;
+          d = `M${x1},${y1} C${x1 + bulge},${y1} ${x2 + bulge},${y2} ${x2},${y2}`;
+        } else if (fromCenterX < toCenterX) {
+          // Source is LEFT of target: right edge -> left edge
+          const x1 = fromRight;
+          const y1 = fromCenterY;
+          const x2 = toLeft;
+          const y2 = toCenterY;
+          const midX = (x1 + x2) / 2;
+          d = `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+        } else {
+          // Source is RIGHT of target: left edge -> right edge
+          const x1 = fromLeft;
+          const y1 = fromCenterY;
+          const x2 = toRight;
+          const y2 = toCenterY;
+          const midX = (x1 + x2) / 2;
+          d = `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
+        }
+
+        const path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('class', arrowClass);
+        path.setAttribute('marker-end', `url(#${markerId})`);
+        svg.appendChild(path);
       }
     }
   }
@@ -548,9 +730,143 @@
   }
 
   // ── Detail Modal ───────────────────────────────────────────
+  function buildParsedView(event) {
+    const type = extractEventType(event);
+    const agent = extractAgentName(event);
+    const badgeStyle = getEventStyle(type);
+    let html = '';
+
+    // Section: Overview
+    html += `<div class="detail-section">`;
+    html += `<div class="detail-section-title">Overview</div>`;
+    html += `<div class="detail-fields">`;
+    html += field('Event', `<span class="detail-badge type-badge ${badgeStyle.badge}">${escapeHtml(type)}</span>`);
+    html += field('Agent', agent);
+    html += field('Time', formatTime(event.timestamp || event.ts));
+    html += field('Session', event.session_id ? event.session_id.slice(0, 12) + '...' : '-');
+    if (event.cwd) html += field('Working Dir', event.cwd);
+    html += `</div></div>`;
+
+    // Section: Tool info (for Pre/PostToolUse)
+    if (event.tool_name) {
+      html += `<div class="detail-section">`;
+      html += `<div class="detail-section-title">Tool Call</div>`;
+      html += `<div class="detail-fields">`;
+      html += field('Tool', event.tool_name);
+
+      if (event.tool_input) {
+        const inp = event.tool_input;
+        // Show key fields in a readable way per tool type
+        if (inp.command) html += field('Command', inp.command);
+        if (inp.file_path) html += field('File', inp.file_path);
+        if (inp.pattern) html += field('Pattern', inp.pattern);
+        if (inp.query) html += field('Query', inp.query);
+        if (inp.prompt) html += field('Prompt', truncate(inp.prompt, 200));
+        if (inp.description) html += field('Description', inp.description);
+        if (inp.subject) html += field('Subject', inp.subject);
+        if (inp.taskId) html += field('Task ID', '#' + inp.taskId);
+        if (inp.status) html += field('Status', inp.status);
+        if (inp.owner) html += field('Owner', inp.owner);
+        if (inp.old_string) html += field('Old', truncate(inp.old_string, 100));
+        if (inp.new_string) html += field('New', truncate(inp.new_string, 100));
+        if (inp.content) html += field('Content', truncate(String(inp.content), 200));
+        if (inp.url) html += field('URL', inp.url);
+        if (inp.name) html += field('Name', inp.name);
+        if (inp.subagent_type) html += field('Agent Type', inp.subagent_type);
+        if (inp.team_name) html += field('Team', inp.team_name);
+        if (inp.addBlockedBy) html += field('Blocked By', inp.addBlockedBy.map(id => '#' + id).join(', '));
+        if (inp.addBlocks) html += field('Blocks', inp.addBlocks.map(id => '#' + id).join(', '));
+      }
+      html += `</div></div>`;
+
+      // Tool response
+      if (event.tool_response) {
+        html += `<div class="detail-section">`;
+        html += `<div class="detail-section-title">Result</div>`;
+        html += `<div class="detail-fields">`;
+        const resp = event.tool_response;
+        if (typeof resp === 'string') {
+          html += field('Output', truncate(resp, 300));
+        } else {
+          if (resp.success !== undefined) html += field('Success', resp.success ? 'Yes' : 'No');
+          if (resp.task) html += field('Task', `#${resp.task.id} ${resp.task.subject || ''}`);
+          if (resp.taskId) html += field('Task ID', '#' + resp.taskId);
+          if (resp.statusChange) html += field('Status', `${resp.statusChange.from} → ${resp.statusChange.to}`);
+          if (resp.updatedFields && resp.updatedFields.length) html += field('Updated', resp.updatedFields.join(', '));
+          if (resp.agent_id) html += field('Agent ID', resp.agent_id);
+          if (resp.name) html += field('Name', resp.name);
+          if (resp.team_name) html += field('Team', resp.team_name);
+          if (resp.model) html += field('Model', resp.model);
+          if (resp.color) html += field('Color', resp.color);
+          // For generic responses, show a truncated JSON
+          const shownKeys = ['success','task','taskId','statusChange','updatedFields','agent_id','name','team_name','model','color'];
+          const remaining = Object.keys(resp).filter(k => !shownKeys.includes(k));
+          if (remaining.length > 0) {
+            const subset = {};
+            remaining.forEach(k => subset[k] = resp[k]);
+            const str = JSON.stringify(subset, null, 2);
+            if (str.length > 2) html += field('Other', truncate(str, 300));
+          }
+        }
+        html += `</div></div>`;
+      }
+    }
+
+    // Section: Agent/Subagent info
+    if (type === 'SubagentStart' || type === 'SubagentStop') {
+      html += `<div class="detail-section">`;
+      html += `<div class="detail-section-title">Agent Info</div>`;
+      html += `<div class="detail-fields">`;
+      if (event.agent_type) html += field('Type', event.agent_type);
+      if (event.agent_id) html += field('Agent ID', event.agent_id);
+      if (event.reason) html += field('Reason', event.reason);
+      if (event.last_assistant_message) html += field('Last Message', truncate(event.last_assistant_message, 200));
+      html += `</div></div>`;
+    }
+
+    // Section: Notification
+    if (type === 'Notification') {
+      html += `<div class="detail-section">`;
+      html += `<div class="detail-section-title">Notification</div>`;
+      html += `<div class="detail-fields">`;
+      if (event.message) html += field('Message', event.message);
+      if (event.notification_type) html += field('Type', event.notification_type);
+      html += `</div></div>`;
+    }
+
+    return html;
+  }
+
+  function field(key, value) {
+    return `<div class="detail-field-key">${escapeHtml(key)}</div><div class="detail-field-value">${typeof value === 'string' && !value.includes('<') ? escapeHtml(value) : value}</div>`;
+  }
+
+  function truncate(str, max) {
+    if (!str) return '-';
+    str = String(str);
+    if (str.length <= max) return str;
+    return str.slice(0, max) + '...';
+  }
+
   function showDetail(event) {
-    dom.detailTitle.textContent = `${extractEventType(event)} - ${extractAgentName(event)}`;
+    const type = extractEventType(event);
+    const agent = extractAgentName(event);
+    dom.detailTitle.textContent = `${type} - ${agent}`;
+
+    // Parsed view
+    const parsedEl = $('#detail-parsed');
+    parsedEl.innerHTML = buildParsedView(event);
+
+    // Raw JSON view
     dom.detailJson.innerHTML = syntaxHighlightJson(event);
+
+    // Reset tabs to Parsed
+    for (const tab of document.querySelectorAll('.detail-tab')) {
+      tab.classList.toggle('active', tab.dataset.detail === 'parsed');
+    }
+    parsedEl.classList.add('active');
+    dom.detailJson.classList.remove('active');
+
     dom.detailOverlay.classList.remove('hidden');
   }
 
@@ -722,6 +1038,23 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') hideDetail();
     });
+
+    // Detail tab switching (Parsed / Raw JSON)
+    for (const tab of document.querySelectorAll('.detail-tab')) {
+      tab.addEventListener('click', () => {
+        for (const t of document.querySelectorAll('.detail-tab')) t.classList.remove('active');
+        tab.classList.add('active');
+        const parsedEl = $('#detail-parsed');
+        const jsonEl = $('#detail-json');
+        if (tab.dataset.detail === 'parsed') {
+          parsedEl.classList.add('active');
+          jsonEl.classList.remove('active');
+        } else {
+          parsedEl.classList.remove('active');
+          jsonEl.classList.add('active');
+        }
+      });
+    }
 
     // Redraw dependency arrows on resize
     window.addEventListener('resize', () => {
