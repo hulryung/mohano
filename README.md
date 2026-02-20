@@ -29,24 +29,40 @@ Claude Code ──(hooks)──> send-event.sh ──(POST)──> Mohano Server
 
 ## Quick Start
 
-### 1. Install and start the server
-
 ```bash
-cd server
-npm install
-npm start
-# Server runs at http://localhost:7777
+git clone https://github.com/hulryung/mohano.git
+cd mohano
+./setup.sh
 ```
 
-For development with auto-reload:
+This will:
+- Install server dependencies (`npm install`)
+- Make hook scripts executable
+- Add Mohano hooks to `~/.claude/settings.json` (merges with existing config)
+
+Then start the server and open the dashboard:
 
 ```bash
-npm run dev
+cd server && npm start
+# Open http://localhost:7777
 ```
 
-### 2. Configure Claude Code hooks
+### Test with sample events (optional)
 
-Add the following to your Claude Code settings (`~/.claude/settings.json`). Adjust the path to `send-event.sh` to match your installation:
+In another terminal:
+
+```bash
+./hooks/test-events.sh
+```
+
+This sends 25 simulated events from 4 agents to verify the pipeline works.
+
+### Manual setup
+
+If you prefer to configure hooks manually, add the following to `~/.claude/settings.json`. Replace `/path/to/mohano` with your actual path:
+
+<details>
+<summary>Show hooks config</summary>
 
 ```json
 {
@@ -100,20 +116,9 @@ Add the following to your Claude Code settings (`~/.claude/settings.json`). Adju
 }
 ```
 
-> **Note:** `TaskCompleted`, `TeammateIdle`, and `Stop` hooks don't support the `matcher` field - omit it for those event types.
+> **Note:** `TaskCompleted`, `TeammateIdle`, and `Stop` hooks don't support the `matcher` field.
 
-### 3. Open the dashboard
-
-Navigate to [http://localhost:7777](http://localhost:7777) in your browser. Start a Claude Code session and you'll see events streaming in.
-
-### 4. Test with sample events (optional)
-
-```bash
-chmod +x hooks/test-events.sh
-./hooks/test-events.sh
-```
-
-This sends 25 simulated events from 4 agents to verify the pipeline works.
+</details>
 
 ## API
 
@@ -129,16 +134,17 @@ This sends 25 simulated events from 4 agents to verify the pipeline works.
 
 ```
 mohano/
+├── setup.sh                    # One-command install + hook config
 ├── frontend/
-│   ├── index.html          # Main page
-│   ├── app.js              # Frontend logic (state, rendering, WebSocket)
-│   └── style.css           # Dark theme styles
+│   ├── index.html              # Main page
+│   ├── app.js                  # Frontend logic (state, rendering, WebSocket)
+│   └── style.css               # Dark theme styles
 ├── hooks/
-│   ├── send-event.sh       # Hook script (stdin JSON -> POST to server)
-│   ├── test-events.sh      # Sample event generator for testing
-│   └── claude-hooks-config.json  # Example hooks configuration
+│   ├── send-event.sh           # Hook script (stdin JSON -> POST to server)
+│   ├── test-events.sh          # Sample event generator for testing
+│   └── claude-hooks-config.json
 └── server/
-    ├── index.mjs           # Node.js HTTP + WebSocket server
+    ├── index.mjs               # Node.js HTTP + WebSocket server
     └── package.json
 ```
 
