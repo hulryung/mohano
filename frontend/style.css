@@ -894,6 +894,280 @@ body.panel-collapsed #bottom-panel-content {
   font-weight: 600;
 }
 
+/* === Agents View === */
+#agents-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#agents-controls label {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#agents-session-selector {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  min-width: 200px;
+}
+
+#agents-session-selector:focus {
+  border-color: var(--accent-blue);
+}
+
+.agents-legend {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.legend-main { background: var(--accent-cyan); }
+.legend-dot.legend-subagent { background: var(--accent-blue); }
+.legend-dot.legend-team { background: var(--accent-purple); }
+
+#agents-container {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.agents-group {
+  margin-bottom: 24px;
+}
+
+.agents-group-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agents-group-header .group-icon {
+  font-size: 14px;
+}
+
+.agents-group-header .group-count {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  padding: 1px 8px;
+  border-radius: 10px;
+}
+
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.agent-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  transition: all var(--transition);
+  border-left: 3px solid var(--accent-gray);
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.agent-card:hover {
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+}
+
+.agent-card.type-main { border-left-color: var(--accent-cyan); }
+.agent-card.type-subagent { border-left-color: var(--accent-blue); }
+.agent-card.type-team { border-left-color: var(--accent-purple); }
+
+.agent-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.agent-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-card-type {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.agent-card-type.main { background: rgba(57,210,192,0.15); color: var(--accent-cyan); }
+.agent-card-type.subagent { background: rgba(88,166,255,0.15); color: var(--accent-blue); }
+.agent-card-type.team { background: rgba(188,140,255,0.15); color: var(--accent-purple); }
+
+.agent-card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.agent-card-status.active { background: rgba(63,185,80,0.15); color: var(--accent-green); }
+.agent-card-status.idle { background: rgba(210,153,34,0.15); color: var(--accent-orange); }
+.agent-card-status.stopped { background: rgba(110,118,129,0.15); color: var(--accent-gray); }
+
+.agent-card-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.agent-card-status.active::before { background: var(--accent-green); }
+.agent-card-status.idle::before { background: var(--accent-orange); }
+.agent-card-status.stopped::before { background: var(--accent-gray); }
+
+.agent-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.agent-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent-meta-label {
+  color: var(--text-muted);
+}
+
+.agent-card-task {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  line-height: 1.4;
+  border-left: 2px solid var(--border-light);
+}
+
+.agent-card-activity {
+  margin-top: 8px;
+}
+
+.agent-card-activity-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.agent-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.agent-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.agent-activity-item:hover {
+  background: var(--bg-hover);
+}
+
+.agent-activity-time {
+  color: var(--text-muted);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.agent-activity-summary {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.agent-team-name {
+  color: var(--accent-purple);
+  font-size: 11px;
+}
+
+.agents-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: var(--text-muted);
+  font-size: 13px;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* === Scrollbar === */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

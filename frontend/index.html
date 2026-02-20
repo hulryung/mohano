@@ -51,6 +51,7 @@
       <div id="view-tabs">
         <button class="tab active" data-view="timeline">Timeline</button>
         <button class="tab" data-view="taskgraph">Task Graph</button>
+        <button class="tab" data-view="agents">Agents</button>
       </div>
 
       <div id="view-timeline" class="view active">
@@ -79,6 +80,19 @@
             <div class="kanban-cards" id="col-completed"></div>
           </div>
         </div>
+      </div>
+
+      <div id="view-agents" class="view">
+        <div id="agents-controls">
+          <label>Session:</label>
+          <select id="agents-session-selector"></select>
+          <div class="agents-legend">
+            <span class="legend-item"><span class="legend-dot legend-main"></span>Main</span>
+            <span class="legend-item"><span class="legend-dot legend-subagent"></span>Subagent</span>
+            <span class="legend-item"><span class="legend-dot legend-team"></span>Team</span>
+          </div>
+        </div>
+        <div id="agents-container"></div>
       </div>
     </main>
   </div>
