@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mohano - Claude Code Agent Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Bar -->
+  <header id="top-bar">
+    <div class="top-left">
+      <h1>Mohano</h1>
+      <span class="subtitle">Claude Code Agent Visualizer</span>
+    </div>
+    <div class="top-right">
+      <span id="event-count">0 events</span>
+      <span id="connection-status" class="status-dot disconnected" title="Disconnected"></span>
+      <span id="connection-label">Disconnected</span>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <div id="app">
+    <!-- Left Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <h3>Filters</h3>
+        <div class="filter-group">
+          <label for="filter-session">Session</label>
+          <select id="filter-session"><option value="">All Sessions</option></select>
+        </div>
+        <div class="filter-group">
+          <label for="filter-agent">Agent</label>
+          <select id="filter-agent"><option value="">All Agents</option></select>
+        </div>
+        <div class="filter-group">
+          <label>Event Types</label>
+          <div id="filter-event-types" class="checkbox-group"></div>
+        </div>
+        <button id="btn-clear-filters" class="btn-secondary">Clear Filters</button>
+      </div>
+      <div class="sidebar-section">
+        <h3>Agents</h3>
+        <ul id="agent-list"></ul>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <div id="view-tabs">
+        <button class="tab active" data-view="timeline">Timeline</button>
+        <button class="tab" data-view="taskgraph">Task Graph</button>
+      </div>
+
+      <div id="view-timeline" class="view active">
+        <div class="timeline-controls">
+          <button id="btn-auto-scroll" class="btn-small active" title="Auto-scroll to latest">Auto-scroll</button>
+          <span id="timeline-info"></span>
+        </div>
+        <div id="timeline-container">
+          <div id="timeline-lanes"></div>
+        </div>
+      </div>
+
+      <div id="view-taskgraph" class="view">
+        <div id="taskgraph-board">
+          <div class="kanban-column" data-status="pending">
+            <div class="kanban-header">Pending</div>
+            <div class="kanban-cards" id="col-pending"></div>
+          </div>
+          <div class="kanban-column" data-status="in_progress">
+            <div class="kanban-header">In Progress</div>
+            <div class="kanban-cards" id="col-in-progress"></div>
+          </div>
+          <div class="kanban-column" data-status="completed">
+            <div class="kanban-header">Completed</div>
+            <div class="kanban-cards" id="col-completed"></div>
+          </div>
+        </div>
+        <svg id="dependency-arrows" class="dependency-overlay"></svg>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Panel -->
+  <div id="bottom-panel">
+    <div id="bottom-panel-header" title="Click to toggle">
+      <span>Live Event Log</span>
+      <span id="bottom-toggle-icon">&#9660;</span>
+    </div>
+    <div id="bottom-panel-content">
+      <table id="event-log-table">
+        <thead>
+          <tr>
+            <th class="col-time">Time</th>
+            <th class="col-type">Type</th>
+            <th class="col-agent">Agent</th>
+            <th class="col-summary">Summary</th>
+          </tr>
+        </thead>
+        <tbody id="event-log-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detail-overlay" class="hidden">
+    <div id="detail-panel">
+      <div id="detail-header">
+        <h3 id="detail-title">Event Detail</h3>
+        <button id="detail-close">&times;</button>
+      </div>
+      <pre id="detail-json"></pre>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

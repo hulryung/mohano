@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "Notification": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "cat | /Users/dkkang/dev/mohano/hooks/send-event.sh"
+      }
+    ]
+  }
+}
