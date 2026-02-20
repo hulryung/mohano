@@ -186,8 +186,8 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  // API key check for /api/ endpoints
-  if (pathname.startsWith('/api/') && !checkApiKey(req)) {
+  // API key check for POST /api/ endpoints only (GET and WebSocket are public)
+  if (pathname.startsWith('/api/') && req.method === 'POST' && !checkApiKey(req)) {
     res.writeHead(401, { 'Content-Type': 'application/json', ...CORS });
     res.end(JSON.stringify({ error: 'Unauthorized' }));
     return;
@@ -269,11 +269,7 @@ const server = createServer(async (req, res) => {
 
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-wss.on('connection', (ws, req) => {
-  if (API_KEY && !checkApiKey(req)) {
-    ws.close(4001, 'Unauthorized');
-    return;
-  }
+wss.on('connection', (ws) => {
   wsClients.add(ws);
   ws.on('close', () => wsClients.delete(ws));
   ws.on('error', () => wsClients.delete(ws));
