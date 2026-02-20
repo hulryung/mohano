@@ -1312,6 +1312,16 @@
     renderEventLog();
   }
 
+  // ── Server URL helpers ─────────────────────────────────────
+  function getBaseUrl() {
+    return `${location.protocol}//${location.host}`;
+  }
+
+  function getWsUrl() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${location.host}/ws`;
+  }
+
   // ── WebSocket ──────────────────────────────────────────────
   function setConnectionStatus(status) {
     dom.connectionStatus.className = `status-dot ${status}`;
@@ -1326,7 +1336,7 @@
     }
 
     setConnectionStatus('connecting');
-    const wsUrl = `ws://${location.hostname || 'localhost'}:7777/ws`;
+    const wsUrl = getWsUrl();
 
     try {
       state.ws = new WebSocket(wsUrl);
@@ -1381,8 +1391,7 @@
   // ── Initial Data Load ──────────────────────────────────────
   async function loadInitialData() {
     try {
-      const baseUrl = `http://${location.hostname || 'localhost'}:7777`;
-      const res = await fetch(`${baseUrl}/api/events`);
+      const res = await fetch(`${getBaseUrl()}/api/events`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const events = Array.isArray(data) ? data : (data.events || []);

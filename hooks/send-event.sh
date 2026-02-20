@@ -5,7 +5,18 @@
 
 set -o pipefail
 
-ENDPOINT="http://localhost:7777/api/events"
+# Load config from ~/.config/mohano/config if it exists
+CONFIG_FILE="${MOHANO_CONFIG:-$HOME/.config/mohano/config}"
+if [ -f "$CONFIG_FILE" ]; then
+  # shellcheck source=/dev/null
+  source "$CONFIG_FILE"
+fi
+
+# Defaults (can be overridden by config file or env vars)
+MOHANO_URL="${MOHANO_URL:-http://localhost:7777}"
+MOHANO_API_KEY="${MOHANO_API_KEY:-}"
+
+ENDPOINT="${MOHANO_URL}/api/events"
 
 # Read JSON from stdin
 INPUT=$(cat)
@@ -26,12 +37,15 @@ except Exception:
     print(sys.argv[1])
 " "$INPUT" 2>/dev/null) || ENRICHED="$INPUT"
 
+# Build curl args
+CURL_ARGS=(-s -X POST "$ENDPOINT" -H "Content-Type: application/json" -d "$ENRICHED" --max-time 2 -o /dev/null)
+
+if [ -n "$MOHANO_API_KEY" ]; then
+  CURL_ARGS+=(-H "Authorization: Bearer $MOHANO_API_KEY")
+fi
+
 # POST to the server in background, with a short timeout so it never hangs
-curl -s -X POST "$ENDPOINT" \
-  -H "Content-Type: application/json" \
-  -d "$ENRICHED" \
-  --max-time 1 \
-  -o /dev/null &
+curl "${CURL_ARGS[@]}" &
 
 # Always exit 0 so we never block Claude Code
 exit 0

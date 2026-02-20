@@ -120,11 +120,79 @@ If you prefer to configure hooks manually, add the following to `~/.claude/setti
 
 </details>
 
+## Remote Server Deployment
+
+Deploy Mohano to an external server so multiple machines can share one dashboard.
+
+### With Docker
+
+On the remote server:
+
+```bash
+git clone https://github.com/hulryung/mohano.git
+cd mohano
+
+# Start with an API key for security
+MOHANO_API_KEY=your-secret-key docker compose up -d
+```
+
+### Without Docker
+
+```bash
+git clone https://github.com/hulryung/mohano.git
+cd mohano/server
+npm install
+
+# Start with API key
+MOHANO_API_KEY=your-secret-key npm start
+```
+
+### Client Setup (on your local machine)
+
+Point your local hooks at the remote server:
+
+```bash
+git clone https://github.com/hulryung/mohano.git
+cd mohano
+./setup.sh --url https://mohano.example.com --api-key your-secret-key
+```
+
+This writes the URL and API key to `~/.config/mohano/config` and configures Claude Code hooks. No local server needed.
+
+### HTTPS with a Reverse Proxy
+
+For production, put Mohano behind nginx or caddy with TLS:
+
+```nginx
+# /etc/nginx/sites-available/mohano
+server {
+    server_name mohano.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:7777;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+}
+```
+
+The `proxy_set_header Upgrade/Connection` lines are required for WebSocket to work.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `7777` | Server listen port |
+| `MOHANO_API_KEY` | _(empty)_ | API key for authentication. If empty, all access is open |
+| `MAX_EVENTS` | `2000` | Circular buffer capacity |
+
 ## API
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/events` | POST | Ingest a hook event (JSON body) |
+| `/api/events` | POST | Ingest a hook event (JSON body). Requires `Authorization: Bearer <key>` if API key is set |
 | `/api/events` | GET | Retrieve stored events. Query params: `session_id`, `agent_type`, `tool_name`, `hook_event_name`, `since_seq`, `limit` |
 | `/api/agents` | GET | List tracked agents |
 | `/api/tasks` | GET | Scan `~/.claude/tasks/` for task files |
@@ -135,6 +203,8 @@ If you prefer to configure hooks manually, add the following to `~/.claude/setti
 ```
 mohano/
 ├── setup.sh                    # One-command install + hook config
+├── Dockerfile                  # Container image for remote deployment
+├── docker-compose.yml          # Docker Compose config
 ├── frontend/
 │   ├── index.html              # Main page
 │   ├── app.js                  # Frontend logic (state, rendering, WebSocket)

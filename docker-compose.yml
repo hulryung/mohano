@@ -1,0 +1,9 @@
+services:
+  mohano:
+    build: .
+    ports:
+      - "${PORT:-7777}:7777"
+    environment:
+      - MOHANO_API_KEY=${MOHANO_API_KEY:-}
+      - MAX_EVENTS=${MAX_EVENTS:-2000}
+    restart: unless-stopped

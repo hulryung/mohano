@@ -8,8 +8,9 @@ import { join, extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = 7777;
-const MAX_EVENTS = 2000;
+const PORT = parseInt(process.env.PORT || '7777', 10);
+const MAX_EVENTS = parseInt(process.env.MAX_EVENTS || '2000', 10);
+const API_KEY = process.env.MOHANO_API_KEY || '';
 const FRONTEND_DIR = resolve(__dirname, '../frontend');
 
 // --- Circular buffer ---
@@ -161,8 +162,18 @@ function parseBody(req) {
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+
+function checkApiKey(req) {
+  if (!API_KEY) return true; // no key configured = open access
+  const auth = req.headers['authorization'] || '';
+  if (auth === `Bearer ${API_KEY}`) return true;
+  // Also accept as query param for WebSocket connections
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  if (url.searchParams.get('api_key') === API_KEY) return true;
+  return false;
+}
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -172,6 +183,13 @@ const server = createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204, CORS);
     res.end();
+    return;
+  }
+
+  // API key check for /api/ endpoints
+  if (pathname.startsWith('/api/') && !checkApiKey(req)) {
+    res.writeHead(401, { 'Content-Type': 'application/json', ...CORS });
+    res.end(JSON.stringify({ error: 'Unauthorized' }));
     return;
   }
 
@@ -251,7 +269,11 @@ const server = createServer(async (req, res) => {
 
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+  if (API_KEY && !checkApiKey(req)) {
+    ws.close(4001, 'Unauthorized');
+    return;
+  }
   wsClients.add(ws);
   ws.on('close', () => wsClients.delete(ws));
   ws.on('error', () => wsClients.delete(ws));
@@ -259,8 +281,9 @@ wss.on('connection', (ws) => {
 
 // --- Start ---
 
-server.listen(PORT, () => {
-  console.log(`Mohano server running at http://localhost:${PORT}`);
-  console.log(`WebSocket endpoint: ws://localhost:${PORT}/ws`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Mohano server running at http://0.0.0.0:${PORT}`);
+  console.log(`WebSocket endpoint: ws://0.0.0.0:${PORT}/ws`);
   console.log(`Serving frontend from: ${FRONTEND_DIR}`);
+  console.log(`API key: ${API_KEY ? 'enabled' : 'disabled (open access)'}`);
 });

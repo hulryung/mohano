@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.DS_Store
+server/index.ts
+hooks/
+*.md
+setup.sh
+.dockerignore
+Dockerfile
+docker-compose.yml
