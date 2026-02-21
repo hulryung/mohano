@@ -184,21 +184,69 @@ html, body {
   background: var(--bg-secondary);
 }
 
-.hero-visual {
+/* === Screenshot Showcase === */
+.hero-screenshots {
   margin-top: 64px;
   width: 100%;
-  max-width: 720px;
+  max-width: 900px;
+}
+
+.screenshot-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  justify-content: center;
+}
+
+.screenshot-tab {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.screenshot-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+}
+
+.screenshot-tab.active {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border);
+}
+
+.screenshot-frame {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: var(--bg-secondary);
-  padding: 20px 24px;
-  text-align: left;
+  padding: 12px 12px 0;
+  overflow: hidden;
+}
+
+.screenshot-frame .terminal-bar {
+  margin-bottom: 12px;
+}
+
+.screenshot-img {
+  display: none;
+  width: 100%;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.screenshot-img.active {
+  display: block;
 }
 
 .terminal-bar {
   display: flex;
   gap: 6px;
-  margin-bottom: 16px;
 }
 
 .terminal-dot {
@@ -211,29 +259,6 @@ html, body {
 .terminal-dot:nth-child(1) { background: #f85149; }
 .terminal-dot:nth-child(2) { background: #d29922; }
 .terminal-dot:nth-child(3) { background: #3fb950; }
-
-.terminal-content {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.8;
-  color: var(--text-secondary);
-}
-
-.terminal-content .prompt {
-  color: var(--accent-cyan);
-}
-
-.terminal-content .cmd {
-  color: var(--text-primary);
-}
-
-.terminal-content .output {
-  color: var(--text-muted);
-}
-
-.terminal-content .success {
-  color: var(--accent-green);
-}
 
 /* === Sections === */
 .section {
@@ -627,12 +652,8 @@ html, body {
     justify-content: center;
   }
 
-  .hero-visual {
-    padding: 16px;
-  }
-
-  .terminal-content {
-    font-size: 11px;
+  .screenshot-frame {
+    padding: 8px 8px 0;
   }
 
   .section {

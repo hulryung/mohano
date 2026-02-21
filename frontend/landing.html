@@ -42,16 +42,19 @@
       </a>
     </div>
 
-    <div class="hero-visual">
-      <div class="terminal-bar">
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
-        <span class="terminal-dot"></span>
+    <div class="hero-screenshots">
+      <div class="screenshot-tabs">
+        <button class="screenshot-tab active" data-target="screenshot-taskgraph">Task Graph</button>
+        <button class="screenshot-tab" data-target="screenshot-agents">Agents</button>
       </div>
-      <div class="terminal-content">
-        <div><span class="prompt">$</span> <span class="cmd">./setup.sh --url https://your-server.com --api-key TOKEN</span></div>
-        <div><span class="output">Configuring Mohano hooks for Claude Code...</span></div>
-        <div><span class="success">Done. Start a Claude Code session and open your dashboard.</span></div>
+      <div class="screenshot-frame">
+        <div class="terminal-bar">
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+          <span class="terminal-dot"></span>
+        </div>
+        <img id="screenshot-taskgraph" class="screenshot-img active" src="screenshot-taskgraph.png" alt="Task Graph view showing kanban board with dependency arrows">
+        <img id="screenshot-agents" class="screenshot-img" src="screenshot-agents.png" alt="Agents view showing team members and subagents">
       </div>
     </div>
   </section>
@@ -245,6 +248,16 @@
     // Close modal on Escape
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeModal();
+    });
+
+    // Screenshot tab switching
+    document.querySelectorAll('.screenshot-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.screenshot-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.screenshot-img').forEach(function(img) { img.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
     });
   </script>
 
