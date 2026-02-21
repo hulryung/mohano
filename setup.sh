@@ -202,8 +202,13 @@ echo -e "${GREEN}  Setup complete!${NC}"
 echo ""
 
 if [ -n "$MOHANO_URL" ]; then
+  # Build dashboard URL: include workspace path for moh_ tokens
+  DASHBOARD_URL="$MOHANO_URL"
+  if [[ "$MOHANO_API_KEY" == moh_* ]]; then
+    DASHBOARD_URL="${MOHANO_URL}/d/${MOHANO_API_KEY}"
+  fi
   echo "  Dashboard:"
-  echo -e "    ${CYAN}${MOHANO_URL}${NC}"
+  echo -e "    ${CYAN}${DASHBOARD_URL}${NC}"
   echo ""
   echo "  Events will be sent to the remote server."
   echo "  Start a new Claude Code session to begin."
