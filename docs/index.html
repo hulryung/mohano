@@ -474,6 +474,48 @@
       color: var(--accent-cyan);
     }
 
+    .demo-info {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: rgba(88, 166, 255, 0.06);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .demo-info-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent-blue);
+      margin-bottom: 8px;
+    }
+
+    .demo-info ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .demo-info li {
+      padding: 2px 0;
+    }
+
+    .demo-info li::before {
+      content: '>';
+      color: var(--text-muted);
+      margin-right: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .demo-info p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
     .demo-warning {
       display: flex;
       align-items: flex-start;
@@ -840,9 +882,18 @@
       <div class="code-block" style="margin-top: 14px;">
         <span class="cmd">./setup.sh</span> --url https://mohano.onrender.com
       </div>
+      <div class="demo-info">
+        <div class="demo-info-title">Data retention</div>
+        <ul>
+          <li><strong>Workspace TTL:</strong> 24 hours after last activity (checked hourly)</li>
+          <li><strong>Events:</strong> Up to 2,000 per workspace (circular buffer &mdash; oldest overwritten)</li>
+          <li><strong>Server restart:</strong> All data is lost (memory-only, no disk storage)</li>
+        </ul>
+        <p style="margin-top: 8px;">The demo runs on Render's free plan, which sleeps after 15 minutes of inactivity. A cold start wipes all data, so in practice data only survives for ~15 minutes without activity.</p>
+      </div>
       <div class="demo-warning">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span>Event data is stored only in memory and is never persisted to disk &mdash; all data is lost when the server restarts. However, this is still a shared public server and all Claude Code event data (tool calls, file paths, agent activity, etc.) will be transmitted over the network. For anything beyond a quick test, deploy your own instance.</span>
+        <span>This is a shared public server &mdash; all Claude Code event data (tool calls, file paths, agent activity, etc.) will be transmitted over the network. For anything beyond a quick test, deploy your own instance.</span>
       </div>
     </div>
   </section>
