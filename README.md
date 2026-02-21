@@ -17,6 +17,14 @@ Mohano connects to Claude Code via its [hooks system](https://docs.anthropic.com
 - **Filtering** - Filter by session, agent, or event type
 - **WebSocket** - Auto-reconnecting real-time connection with no polling
 
+### Agents View
+
+![Agents View](docs/screenshot-agents.png)
+
+### Task Graph
+
+![Task Graph](docs/screenshot-taskgraph.png)
+
 ## Architecture
 
 ```
