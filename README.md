@@ -1,6 +1,8 @@
-# Mohano
+# Mohano (모하노)
 
 Real-time visualizer for Claude Code multi-agent and subagent activity.
+
+The name comes from the Korean phrase "뭐하노" (mohanŏ), meaning "what are you doing?" — because that's exactly why this project exists: to see what Claude Code agents are up to.
 
 Mohano connects to Claude Code via its [hooks system](https://docs.anthropic.com/en/docs/claude-code/hooks) and streams all agent events to a web dashboard, giving you visibility into what each agent is doing across sessions.
 
