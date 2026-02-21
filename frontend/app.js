@@ -4,6 +4,10 @@
 (function () {
   'use strict';
 
+  // ── Workspace Token ──────────────────────────────────────────
+  const pathMatch = location.pathname.match(/^\/d\/([^/]+)/);
+  const WORKSPACE_TOKEN = pathMatch ? pathMatch[1] : null;
+
   // ── State ──────────────────────────────────────────────────
   const state = {
     events: [],
@@ -20,6 +24,7 @@
     reconnectDelay: 1000,
     reconnectTimer: null,
     ws: null,
+    tokenError: false,
   };
 
   const AGENT_COLORS = [
@@ -1319,18 +1324,24 @@
 
   function getWsUrl() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${location.host}/ws`;
+    const base = `${proto}//${location.host}/ws`;
+    return WORKSPACE_TOKEN ? `${base}?token=${encodeURIComponent(WORKSPACE_TOKEN)}` : base;
   }
 
   // ── WebSocket ──────────────────────────────────────────────
-  function setConnectionStatus(status) {
+  function setConnectionStatus(status, message) {
     dom.connectionStatus.className = `status-dot ${status}`;
-    dom.connectionLabel.textContent = status === 'connected' ? 'Connected'
-      : status === 'connecting' ? 'Connecting...' : 'Disconnected';
+    if (message) {
+      dom.connectionLabel.textContent = message;
+    } else {
+      dom.connectionLabel.textContent = status === 'connected' ? 'Connected'
+        : status === 'connecting' ? 'Connecting...' : 'Disconnected';
+    }
     state.wsConnected = status === 'connected';
   }
 
   function connectWebSocket() {
+    if (state.tokenError) return;
     if (state.ws && (state.ws.readyState === WebSocket.OPEN || state.ws.readyState === WebSocket.CONNECTING)) {
       return;
     }
@@ -1366,7 +1377,13 @@
       }
     };
 
-    state.ws.onclose = () => {
+    state.ws.onclose = (e) => {
+      if (e.code === 4001) {
+        state.tokenError = true;
+        setConnectionStatus('disconnected', 'Invalid workspace token');
+        console.warn('WebSocket closed: invalid workspace token');
+        return; // Do not reconnect
+      }
       setConnectionStatus('disconnected');
       console.log('WebSocket disconnected');
       scheduleReconnect();
@@ -1389,9 +1406,14 @@
   }
 
   // ── Initial Data Load ──────────────────────────────────────
+  function apiUrl(path) {
+    const sep = path.includes('?') ? '&' : '?';
+    return WORKSPACE_TOKEN ? `${getBaseUrl()}${path}${sep}token=${encodeURIComponent(WORKSPACE_TOKEN)}` : `${getBaseUrl()}${path}`;
+  }
+
   async function loadInitialData() {
     try {
-      const res = await fetch(`${getBaseUrl()}/api/events`);
+      const res = await fetch(apiUrl('/api/events'));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const events = Array.isArray(data) ? data : (data.events || []);
