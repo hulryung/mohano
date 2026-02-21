@@ -43,7 +43,7 @@ A public demo server is available at **https://mohano.onrender.com**. You can tr
 ./setup.sh --url https://mohano.onrender.com
 ```
 
-> **Warning:** This is a shared public server. All Claude Code event data (tool calls, file paths, agent activity, etc.) will be sent to it. For anything beyond a quick test, deploy your own instance.
+> **Note:** Event data is stored only in memory and is never persisted to disk. All data is lost when the server restarts. However, this is still a shared public server and all Claude Code event data (tool calls, file paths, agent activity, etc.) will be transmitted over the network. For anything beyond a quick test, deploy your own instance.
 
 ## Quick Start
 
