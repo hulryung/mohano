@@ -77,7 +77,11 @@ function resolveWorkspace(token) {
   if (token && token.startsWith('moh_')) {
     const ws = getWorkspace(token);
     if (ws) return ws;
-    return null; // workspace token provided but not found = invalid
+    // Auto-create: workspaces are in-memory so they vanish on restart.
+    // Re-create on first access so dashboard URLs survive deploys.
+    const newWs = createWorkspace();
+    workspaces.set(token, newWs);
+    return newWs;
   }
   // No token or non-workspace token (e.g., global API key): use global workspace
   return globalWorkspace;
@@ -291,11 +295,15 @@ const server = createServer(async (req, res) => {
   const dashboardMatch = pathname.match(/^\/d\/([^/]+)$/);
   if (dashboardMatch && req.method === 'GET') {
     const token = dashboardMatch[1];
-    // Validate token exists
-    if (!workspaces.has(token)) {
+    // Validate token format (must be moh_*)
+    if (!token.startsWith('moh_')) {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<h1>Workspace not found</h1><p>This workspace does not exist or has expired.</p>');
+      res.end('<h1>Workspace not found</h1><p>Invalid workspace token.</p>');
       return;
+    }
+    // Auto-create workspace if it doesn't exist (survives server restarts)
+    if (!workspaces.has(token)) {
+      workspaces.set(token, createWorkspace());
     }
     serveDashboard(res);
     return;
@@ -329,15 +337,10 @@ const server = createServer(async (req, res) => {
 
   // --- API key check for POST /api/ endpoints (except /api/workspaces handled above) ---
   if (pathname.startsWith('/api/') && req.method === 'POST') {
-    // For workspace-token-based requests, check the token instead of API_KEY
+    // For workspace-token-based requests, accept any moh_* token
     const bearerToken = extractBearerToken(req);
     if (bearerToken && bearerToken.startsWith('moh_')) {
-      // Workspace token auth - just need a valid workspace
-      if (!workspaces.has(bearerToken)) {
-        res.writeHead(401, { 'Content-Type': 'application/json', ...CORS });
-        res.end(JSON.stringify({ error: 'Invalid workspace token' }));
-        return;
-      }
+      // Workspace token auth - auto-create if needed (resolveWorkspace handles this)
     } else if (!checkApiKey(req)) {
       // Fall back to API key check for non-workspace tokens
       res.writeHead(401, { 'Content-Type': 'application/json', ...CORS });
