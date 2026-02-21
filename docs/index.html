@@ -436,6 +436,63 @@
       line-height: 1.6;
     }
 
+    /* --- Demo --- */
+    .demo {
+      max-width: 780px;
+      margin: 0 auto 100px;
+      padding: 0 24px;
+    }
+
+    .demo h3 {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .demo .section-sub {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 36px;
+    }
+
+    .demo-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 28px;
+    }
+
+    .demo-box p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .demo-box a {
+      color: var(--accent-cyan);
+    }
+
+    .demo-warning {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--accent-orange);
+      line-height: 1.5;
+    }
+
+    .demo-warning svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
     /* --- Quick Start --- */
     .quickstart {
       max-width: 780px;
@@ -664,6 +721,7 @@
     </div>
     <ul class="nav-links">
       <li class="hide-mobile"><a href="#features">Features</a></li>
+      <li class="hide-mobile"><a href="#demo">Demo</a></li>
       <li class="hide-mobile"><a href="#quickstart">Quick Start</a></li>
       <li>
         <a href="https://github.com/hulryung/mohano" class="nav-github">
@@ -769,6 +827,22 @@
         </div>
         <h4>WebSocket Streaming</h4>
         <p>Auto-reconnecting WebSocket connection. No polling &mdash; events arrive instantly from the server to your browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Live Demo -->
+  <section class="demo" id="demo">
+    <h3>Live Demo</h3>
+    <p class="section-sub">Try it now &mdash; no setup required</p>
+    <div class="demo-box">
+      <p>A public demo server is running at <a href="https://mohano.onrender.com"><strong>mohano.onrender.com</strong></a>. Point your hooks at it to see the dashboard in action:</p>
+      <div class="code-block" style="margin-top: 14px;">
+        <span class="cmd">./setup.sh</span> --url https://mohano.onrender.com
+      </div>
+      <div class="demo-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>This is a shared public server. All Claude Code event data (tool calls, file paths, agent activity, etc.) will be sent to it. For anything beyond a quick test, deploy your own instance.</span>
       </div>
     </div>
   </section>

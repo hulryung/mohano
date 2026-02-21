@@ -35,6 +35,16 @@ Claude Code ──(hooks)──> send-event.sh ──(POST)──> Mohano Server
 - **Server** (`server/index.mjs`) - Node.js HTTP + WebSocket server on port 7777. Receives events via `POST /api/events`, stores them in a circular buffer (2000 max), and broadcasts to all connected WebSocket clients. Also serves the frontend as static files.
 - **Frontend** (`frontend/`) - Vanilla HTML/CSS/JS single-page app with a dark theme. Connects via WebSocket for real-time updates.
 
+## Live Demo
+
+A public demo server is available at **https://mohano.onrender.com**. You can try it out by pointing your hooks at it:
+
+```bash
+./setup.sh --url https://mohano.onrender.com
+```
+
+> **Warning:** This is a shared public server. All Claude Code event data (tool calls, file paths, agent activity, etc.) will be sent to it. For anything beyond a quick test, deploy your own instance.
+
 ## Quick Start
 
 ```bash
